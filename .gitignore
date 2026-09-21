@@ -1,0 +1,13 @@
+*.pyc
+*.egg-info
+*.swp
+tags
+node_modules
+__pycache__/
+dist/
+build/
+.DS_Store
+.vscode/
+.idea/
+*.sublime*
+.ropeproject/

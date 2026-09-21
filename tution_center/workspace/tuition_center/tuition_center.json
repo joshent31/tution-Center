@@ -1,0 +1,342 @@
+{
+ "charts": [
+  {
+   "chart_name": "Monthly Collections",
+   "label": "Monthly Collections"
+  },
+  {
+   "chart_name": "Students by Status",
+   "label": "Students by Status"
+  }
+ ],
+ "content": "[{\"id\":\"3OsHNIcJJl\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Tuition Center</b></span>\",\"col\":12}},{\"id\":\"JpHCnFyAAz\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Active Students\",\"col\":3}},{\"id\":\"a1b2c3d4e5\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Outstanding Fees\",\"col\":3}},{\"id\":\"f6g7h8i9j0\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Active Batches\",\"col\":3}},{\"id\":\"k1l2m3n4o5\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Open Complaints\",\"col\":3}},{\"id\":\"p1q2r3s4t5\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"u1v2w3x4y5\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Collections\",\"col\":6}},{\"id\":\"z1a2b3c4d5\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Students by Status\",\"col\":6}}]",
+ "creation": "2026-09-12 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "school",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Tuition Center",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Academics",
+   "link_count": 4,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Course",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Batch",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Academic Term",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Room",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "People",
+   "link_count": 3,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Student",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Guardian",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Teacher",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fees & Payments",
+   "link_count": 4,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Fee Structure",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Fee Schedule",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Fee Enrolment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Payment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Learning",
+   "link_count": 5,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Exam",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Exam Result",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Assignment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Student Attendance",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Attendance Tool",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Operations",
+   "link_count": 5,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Announcement",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Timetable",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Book",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Book Issue",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Certificate",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings & Reports",
+   "link_count": 4,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Tuition Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "link_count": 0,
+   "link_to": "Notification Reminder",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "link_count": 0,
+   "link_to": "Outstanding Fees Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "link_count": 0,
+   "link_to": "Student-wise Fee Collection",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Tuition Center",
+ "name": "Tuition Center",
+ "number_cards": [
+  {
+   "number_card_name": "Total Active Students"
+  },
+  {
+   "number_card_name": "Outstanding Fees"
+  },
+  {
+   "number_card_name": "Active Batches"
+  },
+  {
+   "number_card_name": "Open Complaints"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "roles": [],
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "label": "Students",
+   "link_to": "Student",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "label": "Batches",
+   "link_to": "Batch",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "Fee Enrolments",
+   "link_to": "Fee Enrolment",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "label": "Payments",
+   "link_to": "Payment",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "label": "Mark Attendance",
+   "link_to": "Attendance Tool",
+   "type": "DocType"
+  },
+  {
+   "color": "Cyan",
+   "label": "Students",
+   "link_to": "Student",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Tuition Settings",
+   "link_to": "Tuition Settings",
+   "type": "DocType"
+  }
+ ],
+ "title": "Tuition Center"
+}

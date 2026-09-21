@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>My Tuition Portal</title>
+	<style>
+		body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: #f5f7fa; color: #243642; }
+		.header { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; padding: 32px 24px; }
+		.header h1 { margin: 0 0 4px; font-size: 24px; }
+		.container { max-width: 960px; margin: 0 auto; padding: 24px; }
+		.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: -24px 0 24px; }
+		.card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+		.card .value { font-size: 28px; font-weight: 700; color: #4f46e5; }
+		.card .label { font-size: 13px; color: #64748b; margin-top: 4px; }
+		.section { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+		.section h3 { margin: 0 0 12px; font-size: 16px; }
+		table { width: 100%; border-collapse: collapse; }
+		th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eef2f7; font-size: 14px; }
+		th { color: #64748b; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+		.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+		.badge.paid { background: #dcfce7; color: #15803d; }
+		.badge.partially { background: #fef9c3; color: #a16207; }
+		.badge.unpaid { background: #fee2e2; color: #b91c1c; }
+	</style>
+</head>
+<body>
+	<div class="header">
+		<h1>{{ centre_name or "Tuition Center" }}</h1>
+		<p>Welcome back, {{ frappe.session.user }}</p>
+	</div>
+	<div class="container">
+		{% set fees = fees or [] %}
+		<div class="cards">
+			<div class="card">
+				<div class="value">{{ fees | length }}</div>
+				<div class="label">Fee Records</div>
+			</div>
+			{% set outstanding = fees | sum(attribute='outstanding') %}
+			<div class="card">
+				<div class="value">{{ frappe.utils.fmt_money(outstanding) }}</div>
+				<div class="label">Outstanding</div>
+			</div>
+		</div>
+
+		<div class="section">
+			<h3>My Fees</h3>
+			{% if fees %}
+			<table>
+				<thead>
+					<tr><th>Course</th><th>Term</th><th>Fee</th><th>Paid</th><th>Outstanding</th><th>Status</th></tr>
+				</thead>
+				<tbody>
+					{% for f in fees %}
+					<tr>
+						<td>{{ f.course or "-" }}</td>
+						<td>{{ f.academic_term or "-" }}</td>
+						<td>{{ frappe.utils.fmt_money(f.fee) }}</td>
+						<td>{{ frappe.utils.fmt_money(f.paid) }}</td>
+						<td>{{ frappe.utils.fmt_money(f.outstanding) }}</td>
+						<td><span class="badge {{ f.status | lower | replace(' ', '') }}">{{ f.status }}</span></td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			{% else %}
+			<p>No fee records found.</p>
+			{% endif %}
+		</div>
+	</div>
+</body>
+</html>
