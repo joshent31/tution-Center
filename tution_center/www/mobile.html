@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#4338ca" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Josh Tuition" />
+  <link rel="manifest" href="/assets/tution_center/images/manifest.json" />
+  <link rel="apple-touch-icon" href="/assets/tution_center/images/icon-192.png" />
+  <link rel="icon" href="/assets/tution_center/images/icon-192.png" />
+  <title>Josh Tuition Centre</title>
+  <link rel="stylesheet" href="/assets/tution_center/css/mobile.css" />
+</head>
+<body>
+  <div id="app" class="app"
+       data-logged-in="{{ logged_in and 1 or 0 }}"
+       data-csrf="{{ csrf_token }}"
+       data-fullname="{{ fullname or '' }}"
+       data-is-student="{{ is_student and 1 or 0 }}"
+       data-is-guardian="{{ is_guardian and 1 or 0 }}"
+       data-is-teacher="{{ is_teacher and 1 or 0 }}"
+       data-is-manager="{{ is_manager and 1 or 0 }}">
+
+    <!-- ============ LOGIN SCREEN ============ -->
+    <div id="login-screen" class="login-screen hidden">
+      <div class="login-hero">
+        <img src="/assets/tution_center/images/icon-192.png" alt="logo" class="login-logo" />
+        <h1>Josh Tuition Centre</h1>
+        <p class="login-sub">Sign in to see your fees, classes & results</p>
+      </div>
+      <form id="login-form" class="login-form" autocomplete="on">
+        <label class="field">
+          <span>Email / Username</span>
+          <input type="text" name="usr" required autocapitalize="none" />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" name="pwd" required />
+        </label>
+        <div id="login-error" class="login-error hidden"></div>
+        <button type="submit" class="btn-primary" id="login-btn">Sign In</button>
+        <p class="login-hint">Students &amp; guardians: use the account created by the centre.</p>
+      </form>
+    </div>
+
+    <!-- ============ MAIN APP ============ -->
+    <div id="main-screen" class="main-screen hidden">
+      <header class="app-header">
+        <div class="header-left">
+          <div id="header-avatar" class="avatar">?</div>
+          <div>
+            <div id="header-name" class="header-name">…</div>
+            <div id="header-role" class="header-role">…</div>
+          </div>
+        </div>
+        <button id="refresh-btn" class="icon-btn" title="Refresh">⟳</button>
+      </header>
+
+      <main id="content" class="content">
+        <div class="skeleton" id="skeleton">
+          <div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div>
+        </div>
+      </main>
+
+      <nav class="tabbar" id="tabbar">
+        <button class="tab active" data-tab="home">🏠<span>Home</span></button>
+        <button class="tab" data-tab="fees">💰<span>Fees</span></button>
+        <button class="tab" data-tab="timetable">🗓<span>Timetable</span></button>
+        <button class="tab" data-tab="results">📝<span>Results</span></button>
+        <button class="tab" data-tab="more">⋯<span>More</span></button>
+      </nav>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="/assets/tution_center/js/mobile_app.js"></script>
+</body>
+</html>

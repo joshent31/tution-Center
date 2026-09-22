@@ -35,6 +35,11 @@ website_route_rules = [
     {"from_route": "/tuition/<path:app_path>", "to_route": "tuition"},
 ]
 
+# ---------------- Mobile App (PWA) ----------------
+# Website Users (students/guardians/teachers) land on the mobile app after login
+website_user_home_page = "tution_center.mobile_api.get_website_user_home_page"
+update_website_context = "tution_center.mobile_api.update_website_context"
+
 # ---------------- Standard footer/portal ----------------
 # portal hooks
 # standard_portal_menu_items are defined via Web Portal Menu doctype in v15

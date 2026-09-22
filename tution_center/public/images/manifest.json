@@ -1,0 +1,49 @@
+{
+  "name": "Josh Tuition Centre",
+  "short_name": "Josh Tuition",
+  "description": "Tuition Centre app for students, guardians and teachers - fees, attendance, results, timetable and more.",
+  "start_url": "/mobile?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef2ff",
+  "theme_color": "#4338ca",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/assets/tution_center/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/tution_center/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/tution_center/images/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Fees",
+      "url": "/mobile?tab=fees",
+      "description": "View fee dues and payment history"
+    },
+    {
+      "name": "Timetable",
+      "url": "/mobile?tab=timetable",
+      "description": "This week's class schedule"
+    },
+    {
+      "name": "Results",
+      "url": "/mobile?tab=results",
+      "description": "Exam results and grades"
+    }
+  ]
+}

@@ -18,7 +18,8 @@ A complete, advanced **Tuition / Coaching Centre Management System** built for t
 8. [Installation](#-installation)
 9. [Roles & Permissions Matrix](#-roles--permissions-matrix)
 10. [Doctype Reference](#-doctype-reference)
-11. [Future Scope / Roadmap](#-future-scope--roadmap)
+11. [Mobile App (PWA) — like Frappe HRMS](#-mobile-app-pwa--like-frappe-hrms)
+12. [Future Scope / Roadmap](#-future-scope--roadmap)
 
 ---
 
@@ -353,7 +354,63 @@ Enforced via `permissions.py` (`get_permission_query_conditions` for list views 
 
 ---
 
-## 🔮 Future Scope / Roadmap
+## 📱 Mobile App (PWA) — like Frappe HRMS
+
+Just like **Frappe HRMS** ships its mobile experience as an installable **PWA served from the app itself**, this app serves a full mobile app at **`/mobile`** on your site — no separate server, no extra hosting. Users open the URL once, log in, and **"Add to Home Screen"**; from then on it behaves like a native app (own icon, full-screen, splash, offline shell). For Play Store / App Store distribution, wrap the same app with **Capacitor** (guide below).
+
+### What users get
+
+| Role | In the app |
+|---|---|
+| **Student** | Outstanding-fee hero card · today's classes · batches & grade · full fee ledger with per-course progress bars & payment history · weekly timetable · exam results (pass/fail, avg %, grade) · 90-day attendance % · assignments with submission status · announcements · raise complaints · own profile |
+| **Guardian** | Everything above for **each linked child**, with a one-tap child switcher |
+| **Teacher** | Batch dashboard (students, seats filled) · today's classes with room · batch rosters · mark attendance from the phone (bulk Present/Absent/Leave) |
+
+### How users install it (SOP)
+
+1. Centre shares the link: `https://your-site.com/mobile` (via WhatsApp, SMS or email).
+2. User opens it and signs in with the account the centre created for them (*Create Portal User*).
+3. Install:
+   - **Android (Chrome)**: menu ⋮ → **Add to Home screen** → confirm. Icon appears like a normal app.
+   - **iPhone (Safari)**: Share → **Add to Home Screen**.
+   - **Desktop**: install icon in the address bar.
+4. Opening the icon launches full-screen with the app logo — login persists (session cookie), and the last-viewed shell renders instantly even before data arrives.
+
+> Website users are sent straight to the app after login (`website_user_home_page` hook), so the website homepage is never in their way.
+
+### Technical design
+
+| Piece | File | Purpose |
+|---|---|---|
+| Page shell | `tution_center/www/mobile.{py,html,json}` | Server-renders session state (logged-in, roles, CSRF) into the HTML |
+| SPA | `public/js/mobile_app.js` | Vanilla-JS app: login screen, 5 tabs (Home / Fees / Timetable / Results / More), child switcher, install prompt |
+| Styles | `public/css/mobile.css` | App-shell layout, safe-area insets, skeleton loaders |
+| API | `tution_center/mobile_api.py` | Whitelisted, **scoped** endpoints (`get_me`, `get_fees`, `get_timetable`, `get_results`, `get_attendance`, `get_assignments`, `create_complaint`, teacher `mark_attendance` …) — every query is filtered by the caller's student/guardian/teacher links |
+| Manifest | `public/images/manifest.json` | Name, icons, theme colour, shortcuts (Fees / Timetable / Results) |
+| Service worker | `public/js/tuition_sw.js` | Offline app shell; **never** caches API responses |
+| Icons | `public/images/icon-*.png` | 192 / 512 / maskable variants |
+
+After install/migrate + `bench build --app tution_center`, visit `https://your-site.com/mobile`.
+
+### Publishing to Play Store / App Store (Capacitor wrapper)
+
+The same PWA can be wrapped into a store binary — this is exactly how HRMS-style PWAs go to stores:
+
+```bash
+npm init -y && npm i @capacitor/core @capacitor/cli
+npx cap init "Josh Tuition" com.joshent.tuition --web-dir=www
+# point the app at your site
+#   capacitor.config.json -> { "server": { "url": "https://your-site.com", "cleartext": false } }
+npm i @capacitor/android @capacitor/ios
+npx cap add android && npx cap add ios
+npx cap sync
+npx cap open android   # build & sign AAB in Android Studio
+npx cap open ios       # build & sign in Xcode
+```
+
+Because the wrapper loads your live site, features, fixes and branding ship **without store re-reviews**; the native shell adds push-notification and camera capabilities for the roadmap below.
+
+---
 
 Planned enhancements, grouped by module. Items marked *(easy)* are small increments on the current design; *(major)* are new subsystems.
 
@@ -378,8 +435,8 @@ Planned enhancements, grouped by module. Items marked *(easy)* are small increme
 
 ### 📣 Communication
 - **WhatsApp Cloud API integration** — templated fee reminders, absence alerts, result notifications (currently wa.me deep links) *(easy)*
-- **Push notifications** (FCM) + mobile app wrapper (React Native / Flutter)
-- **Absence auto-alert** — instant guardian email/SMS when attendance marked Absent *(easy — hook on Student Attendance)*
+- **Push notifications (FCM)** — `register_push_token` endpoint already exists in `mobile_api.py`; wire an FCM sender + send on fee reminders / absence / results *(easy)*
+- **Absence auto-alert** — instant guardian email/SMS/push when attendance marked Absent *(easy — hook on Student Attendance)*
 - **Two-way messaging inbox** with threading per student
 
 ### 🏢 Multi-centre & Scaling
@@ -399,7 +456,7 @@ Planned enhancements, grouped by module. Items marked *(easy)* are small increme
 - **Data retention & GDPR export/erase** for student PII
 - **SSO** (Google/Microsoft) for portal users
 - **Audit trail page** — who changed fees/results, when (beyond Frappe versions)
-- **Mobile-first PWA** for attendance on the go with offline sync
+- **Mobile-first PWA for attendance on the go** ✅ *done — see Mobile App section above; remaining: offline attendance queue sync*
 
 > Want to contribute a roadmap item? Open an issue or a PR — the module structure above shows exactly where each feature belongs.
 
