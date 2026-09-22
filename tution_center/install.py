@@ -12,13 +12,14 @@ def before_uninstall():
 
 
 def make_roles():
-    """Create the three custom roles used by the app."""
-    for role in ("Tuition Manager", "Tuition Teacher", "Guardian"):
+    """Create the roles used by the app (Student exists in ERPNext installs,
+    but must be created when running on plain Frappe)."""
+    for role in ("Tuition Manager", "Tuition Teacher", "Student", "Guardian"):
         if not frappe.db.exists("Role", role):
             frappe.get_doc(
                 {
                     "doctype": "Role",
                     "role_name": role,
-                    "desk_access": 1 if role != "Guardian" else 0,
+                    "desk_access": 1 if role not in ("Student", "Guardian") else 0,
                 }
             ).insert(ignore_permissions=True)
