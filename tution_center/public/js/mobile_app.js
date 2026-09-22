@@ -207,10 +207,10 @@
         var p = me.summary || {};
         var headerName = me.is_teacher ? (p.teacher && p.teacher.teacher_name) : (p.student && p.student.student_name);
         $("#header-name").textContent = headerName || me.fullname || "";
-        $("#header-role").textContent = me.is_teacher ? "Teacher" : (me.students.length > 1 ? "Guardian" : "Student");
+        $("#header-role").textContent = me.is_manager ? "Manager" : me.is_teacher ? "Teacher" : (me.students.length > 1 ? "Guardian" : "Student");
         $("#header-avatar").outerHTML = avatarHtml(
-          me.is_teacher ? p.teacher && p.teacher.photo : p.student && p.student.photo,
-          headerName
+          me.is_manager ? "" : me.is_teacher ? p.teacher && p.teacher.photo : p.student && p.student.photo,
+          headerName || me.fullname
         );
 
         var html = "";
@@ -223,7 +223,9 @@
           }).join("") + "</div>";
         }
 
-        if (me.is_teacher) {
+        if (me.is_manager) {
+          html += Screens._managerHome(p);
+        } else if (me.is_teacher) {
           html += Screens._teacherHome(p);
         } else {
           html += Screens._studentHome(me, p);
@@ -290,6 +292,68 @@
       return html;
     },
 
+    _managerHome: function (p) {
+      var html = "";
+      var collected = p.fees_collected || 0;
+      var expected = p.fees_expected || 0;
+      var pct = expected > 0 ? Math.round((collected / expected) * 100) : 0;
+
+      html += card(
+        '<div class="due-hero ' + (p.fees_outstanding > 0 ? "due" : "clear") + '">' +
+        '<div class="due-label">Fees Collected</div>' +
+        '<div class="due-amount">' + money(collected) + '</div>' +
+        '<div class="due-sub">' + pct + "% of " + money(expected) + " · Outstanding " + money(p.fees_outstanding) + "</div></div>"
+      );
+
+      html += '<div class="grid2">';
+      html += card(
+        '<div class="stat"><div class="stat-num">' + (p.students_active || 0) + '</div><div class="stat-label">Active Students</div></div>' +
+        '<div class="stat"><div class="stat-num">' + (p.batches_active || 0) + '</div><div class="stat-label">Active Batches</div></div>',
+        "slim"
+      );
+      html += card(
+        '<div class="stat"><div class="stat-num">' + (p.teachers || 0) + '</div><div class="stat-label">Teachers</div></div>' +
+        '<div class="stat"><div class="stat-num">' + (p.complaints_open || 0) + '</div><div class="stat-label">Open Complaints</div></div>',
+        "slim"
+      );
+      html += "</div>";
+
+      if (p.upcoming_exams && p.upcoming_exams.length) {
+        html += '<h3 class="sec-title">📝 Upcoming Exams</h3>';
+        html += p.upcoming_exams.map(function (e) {
+          return card(
+            '<div class="row"><span class="row-main">' + esc(e.exam_name) + "</span>" +
+            '<span class="row-side">' + fmtDate(e.exam_date) + "</span></div>" +
+            '<div class="row-sub">' + esc(e.course || "") + (e.room ? " · Room " + esc(e.room) : "") + "</div>",
+            "slim"
+          );
+        }).join("");
+      }
+
+      if (p.recent_payments && p.recent_payments.length) {
+        html += '<h3 class="sec-title">💳 Recent Payments</h3>';
+        html += p.recent_payments.map(function (pay) {
+          return card(
+            '<div class="row"><span class="row-main">' + esc(pay.student_name || pay.student) + "</span>" +
+            '<span class="row-side">' + money(pay.amount) + "</span></div>" +
+            '<div class="row-sub">' + fmtDate(pay.payment_date) + " · " + esc(pay.mode_of_payment || "—") + "</div>",
+            "slim"
+          );
+        }).join("");
+      }
+
+      if (p.complaints && p.complaints.length) {
+        html += '<h3 class="sec-title">🆘 Open Complaints</h3>';
+        html += p.complaints.map(function (c) {
+          return card(
+            '<div class="row"><span class="row-main">' + esc(c.subject) + "</span>" + statusPill(c.status) + "</div>",
+            "slim"
+          );
+        }).join("");
+      }
+      return html;
+    },
+
     _teacherHome: function (p) {
       var t = p.teacher || {};
       var html = card(
@@ -344,6 +408,11 @@
 
     // ---------------- fees ----------------
     fees: function () {
+      if (STATE.me && STATE.me.is_manager) {
+        $("#content").innerHTML = card(empty("Open the desk for the full fee ledger, schedules and reports")) +
+          '<a class="btn-primary" style="display:block;text-align:center;text-decoration:none" href="/app/fee-enrolment">Open Fee Enrolments in Desk</a>';
+        return Promise.resolve();
+      }
       if (STATE.me && STATE.me.is_teacher) {
         $("#content").innerHTML = empty("Teachers do not have a fee view");
         return Promise.resolve();
@@ -394,6 +463,11 @@
 
     // ---------------- timetable ----------------
     timetable: function () {
+      if (STATE.me && STATE.me.is_manager) {
+        $("#content").innerHTML = card(empty("Managers manage timetables in the desk")) +
+          '<a class="btn-primary" style="display:block;text-align:center;text-decoration:none" href="/app/batch">Open Batches in Desk</a>';
+        return Promise.resolve();
+      }
       return api("get_timetable", { batch: "" }, "GET").then(function (data) {
         if (!data.slots.length) {
           $("#content").innerHTML = empty("No timetable published for your batch yet");
@@ -424,6 +498,11 @@
 
     // ---------------- results ----------------
     results: function () {
+      if (STATE.me && STATE.me.is_manager) {
+        $("#content").innerHTML = card(empty("Managers manage exams in the desk")) +
+          '<a class="btn-primary" style="display:block;text-align:center;text-decoration:none" href="/app/exam">Open Exams in Desk</a>'; 
+        return Promise.resolve();
+      }
       if (STATE.me && STATE.me.is_teacher) {
         $("#content").innerHTML = empty("Use the desk to enter exam results");
         return Promise.resolve();
@@ -506,6 +585,12 @@
     _loadProfile: function () {
       var host = $("#profile-host");
       if (!host) return;
+      if (STATE.me && STATE.me.is_manager) {
+        host.innerHTML = card(
+          '<div class="row"><span class="row-main">' + esc(STATE.me.fullname || "") + "</span></div>" +
+          '<div class="row-sub">Manager · ' + esc(STATE.me.centre || "") + "</div>", "slim");
+        return;
+      }
       if (STATE.me && STATE.me.is_teacher) {
         host.innerHTML = card(
           '<div class="row"><span class="row-main">' + esc((STATE.me.summary.teacher || {}).teacher_name || "") + "</span></div>" +

@@ -172,7 +172,24 @@ def get_me():
 
     centre = frappe.db.get_single_value("Tuition Settings", "centre_name") or "Josh Tuition Centre"
 
+    is_manager = "Tuition Manager" in roles or "System Manager" in roles
+
     if not allowed_students and not teacher:
+        if is_manager:
+            # Managers get the centre dashboard — no personal profile needed.
+            return {
+                "user": user,
+                "fullname": frappe.db.get_value("User", user, "full_name"),
+                "roles": roles,
+                "centre": centre,
+                "currency": currency,
+                "is_teacher": False,
+                "is_manager": True,
+                "teacher_id": None,
+                "students": [],
+                "default_student": None,
+                "summary": _manager_summary(),
+            }
         if frappe.db.exists("Guardian", {"user": user}):
             frappe.throw(
                 _(
@@ -223,6 +240,7 @@ def get_me():
         "centre": centre,
         "currency": currency,
         "is_teacher": bool(teacher),
+        "is_manager": is_manager,
         "teacher_id": teacher,
         "students": profiles,
         "default_student": default["id"],
@@ -241,6 +259,8 @@ def get_student_summary(student_id=None, _internal=False):
     if not _internal:
         _require_login()
         allowed_students, teacher = _get_students_for_request()
+        if not teacher and not allowed_students and "Tuition Manager" in frappe.get_roles():
+            return {}  # pure manager: no personal student view
         if teacher and not student_id:
             return _teacher_summary(teacher)
         if not student_id:
@@ -440,6 +460,9 @@ def get_timetable(batch=None):
     """Weekly timetable for the caller's (or requested) batch, scoped."""
     _require_login()
     batch = _resolve_batch(batch)
+    if not batch and "Tuition Manager" in frappe.get_roles(frappe.session.user):
+        # managers have no personal batch — show the first active one
+        batch = frappe.db.get_value("Batch", {"status": "Active"}, "name")
     if not batch:
         return {"slots": [], "batch": None}
 
@@ -464,6 +487,8 @@ def get_results(student_id=None):
     _require_login()
     allowed_students, _teacher = _get_students_for_request()
     if not student_id:
+        if not allowed_students and "Tuition Manager" in frappe.get_roles():
+            return {"results": [], "stats": {"pass": 0, "fail": 0, "avg_pct": 0}}
         student_id = allowed_students[0] if allowed_students else None
     if student_id not in allowed_students:
         frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -493,6 +518,13 @@ def get_attendance(student_id=None, from_date=None, to_date=None):
     _require_login()
     allowed_students, _teacher = _get_students_for_request()
     if not student_id:
+        if not allowed_students and "Tuition Manager" in frappe.get_roles():
+            return {
+                "from_date": from_date or add_days(today(), -90),
+                "to_date": to_date or today(),
+                "records": [], "percentage": 0, "total": 0, "present": 0,
+                "absent": 0, "leave": 0,
+            }
         student_id = allowed_students[0] if allowed_students else None
     if student_id not in allowed_students:
         frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -566,6 +598,8 @@ def get_assignments(student_id=None):
     _require_login()
     allowed_students, _teacher = _get_students_for_request()
     if not student_id:
+        if not allowed_students and "Tuition Manager" in frappe.get_roles():
+            return {"assignments": []}
         student_id = allowed_students[0] if allowed_students else None
     if student_id not in allowed_students:
         frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -661,3 +695,62 @@ def register_push_token(token, platform="web"):
         f"push token registered: user={frappe.session.user} platform={platform}"
     )
     return {"ok": 1}
+
+
+# ------------------------------------------------------------------
+# 10. manager dashboard
+# ------------------------------------------------------------------
+
+
+def _manager_summary():
+    """Centre-wide aggregates for the mobile manager dashboard."""
+    def scalar(sql, values=None):
+        row = frappe.db.sql(sql, values)
+        return float(row[0][0] or 0) if row else 0.0
+
+    fees_expected = scalar(
+        "select coalesce(sum(fee_amount), 0) from `tabFee Enrolment` where docstatus < 2"
+    )
+    fees_collected = scalar(
+        "select coalesce(sum(amount), 0) from `tabPayment` where docstatus = 1"
+    )
+
+    students_active = frappe.db.count("Student", {"status": "Active"})
+    batches_active = frappe.db.count("Batch", {"status": "Active"})
+    teachers = frappe.db.count("Teacher", {"status": "Active"})
+    complaints_open = frappe.db.count("Complaint", {"status": "Open"})
+
+    upcoming_exams = frappe.get_all(
+        "Exam",
+        filters={"exam_date": (">=", today()), "docstatus": ("<", 2)},
+        fields=["name", "exam_name", "exam_date", "course", "room"],
+        order_by="exam_date asc",
+        limit_page_length=5,
+    )
+    recent_payments = frappe.get_all(
+        "Payment",
+        filters={"docstatus": 1},
+        fields=["name", "student", "student_name", "payment_date", "amount", "mode_of_payment"],
+        order_by="payment_date desc, creation desc",
+        limit_page_length=5,
+    )
+    complaints = frappe.get_all(
+        "Complaint",
+        filters={"status": ("in", ["Open", "In Progress"])},
+        fields=["name", "subject", "status", "creation"],
+        order_by="creation desc",
+        limit_page_length=5,
+    )
+
+    return {
+        "students_active": students_active,
+        "batches_active": batches_active,
+        "teachers": teachers,
+        "complaints_open": complaints_open,
+        "fees_expected": fees_expected,
+        "fees_collected": fees_collected,
+        "fees_outstanding": max(fees_expected - fees_collected, 0),
+        "upcoming_exams": upcoming_exams,
+        "recent_payments": recent_payments,
+        "complaints": complaints,
+    }
