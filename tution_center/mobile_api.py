@@ -18,14 +18,55 @@ from frappe.utils import add_days, flt, get_datetime, nowdate, today
 # ------------------------------------------------------------------
 
 
+def _autolink_by_email(doctype, user):
+    """Link a Student/Teacher record whose email matches the login email.
+
+    Covers the common case where the Student/Teacher record was created
+    (with an email) before or after the portal user account, so nobody has
+    to open the record and set the `user` field by hand.
+    """
+    email = (frappe.db.get_value("User", user, "email") or user or "").strip()
+    if not email or "@" not in email:
+        return None
+    email_field = "student_email_id" if doctype == "Student" else "email"
+    name = frappe.db.get_value(doctype, {email_field: email}, "name")
+    # only claim records not already linked to another account
+    if not name or frappe.db.get_value(doctype, name, "user"):
+        return None
+    frappe.db.set_value(doctype, name, "user", user, update_modified=False)
+    return name
+
+
+def _autolink_guardians_by_email(user):
+    """Link Guardian records matching the login email (family-shared accounts)."""
+    email = (frappe.db.get_value("User", user, "email") or user or "").strip()
+    if not email or "@" not in email:
+        return []
+    rows = frappe.get_all(
+        "Guardian", filters={"email": email, "user": ("is", "not set")}, pluck="name"
+    )
+    for name in rows:
+        frappe.db.set_value("Guardian", name, "user", user, update_modified=False)
+    return rows
+
+
 def _get_students_for_user(user=None):
-    """Student ids for the logged-in user: self, or all children of a guardian."""
+    """Student ids for the logged-in user: self, or all children of a guardian.
+
+    Auto-links profiles by email on first use, so a login whose Student /
+    Guardian record exists but has no `user` set still resolves.
+    """
     user = user or frappe.session.user
+
     student = frappe.db.get_value("Student", {"user": user}, "name")
+    if not student:
+        student = _autolink_by_email("Student", user)
     if student:
         return [student]
 
     guardians = frappe.get_all("Guardian", filters={"user": user}, pluck="name")
+    if not guardians:
+        guardians = _autolink_guardians_by_email(user)
     if not guardians:
         return []
     return frappe.get_all(
@@ -37,7 +78,10 @@ def _get_students_for_user(user=None):
 
 def _is_teacher(user=None):
     user = user or frappe.session.user
-    return frappe.db.get_value("Teacher", {"user": user}, "name")
+    teacher = frappe.db.get_value("Teacher", {"user": user}, "name")
+    if not teacher:
+        teacher = _autolink_by_email("Teacher", user)
+    return teacher
 
 
 def _get_students_for_request():
@@ -129,7 +173,23 @@ def get_me():
     centre = frappe.db.get_single_value("Tuition Settings", "centre_name") or "Josh Tuition Centre"
 
     if not allowed_students and not teacher:
-        frappe.throw(_("No student or teacher profile linked to your account"), frappe.PermissionError)
+        if frappe.db.exists("Guardian", {"user": user}):
+            frappe.throw(
+                _(
+                    "Your guardian profile has no students linked yet. Ask the centre "
+                    "office to add you in the student's Guardians table."
+                ),
+                frappe.PermissionError,
+            )
+        frappe.throw(
+            _(
+                "No Student, Guardian or Teacher record is linked to your account ({0}) yet. "
+                "Ask the centre office to open your record and click 'Create Portal User', "
+                "or set its 'User' field to {0}. Records whose email matches your login "
+                "are linked automatically the next time you sign in."
+            ).format(frappe.bold(user)),
+            frappe.PermissionError,
+        )
 
     def profile(doctype, name):
         if doctype == "Student":

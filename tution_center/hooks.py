@@ -55,6 +55,13 @@ before_uninstall = "tution_center.install.before_uninstall"
 # ---------------- Calendars / views ----------------
 # calendar_views = [{"doctype": "Exam"}]
 
+# ---------------- Client scripts (desk buttons) ----------------
+app_include_js = []
+doctype_js = {
+	"Student": "public/js/student.js",
+	"Guardian": "public/js/guardian.js",
+}
+
 # ---------------- Document actions / global search ----------------
 global_search_doctypes = {
     "Course": 1,
