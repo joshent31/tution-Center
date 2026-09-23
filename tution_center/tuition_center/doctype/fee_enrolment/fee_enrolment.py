@@ -33,8 +33,12 @@ class FeeEnrolment(Document):
             frappe.throw(_("Payment amount must be greater than zero"))
 
         outstanding = flt(self.fee_amount) - flt(self.paid_amount)
-        if amount > outstanding and not frappe.flags.in_test:
-            frappe.msgprint(_("Payment exceeds outstanding amount"))
+        if amount > outstanding:
+            frappe.throw(
+                _("Payment {0} exceeds the outstanding balance {1}").format(
+                    frappe.bold(amount), frappe.bold(outstanding)
+                )
+            )
 
         payment = frappe.get_doc(
             {
@@ -72,9 +76,15 @@ class FeeEnrolment(Document):
             student.update_stats()
 
     def on_update(self):
-        self.sync_payment_rows()
+        self.sync_payment_rows(save=False)
 
-    def sync_payment_rows(self):
+    def sync_payment_rows(self, save=True):
+        """Rebuild the payment-history child table from submitted payments.
+
+        When ``save`` is set, the rebuilt rows are persisted to the database
+        directly (bypassing full validate/save hooks to avoid recursion),
+        so the displayed payment history is never stale.
+        """
         payments = frappe.get_all(
             "Payment",
             filters={"fee_enrolment": self.name, "docstatus": 1},
@@ -91,3 +101,8 @@ class FeeEnrolment(Document):
             for p in payments
         ]
         self.set("payments", rows)
+
+        if save:
+            self.flags.ignore_validate = True
+            self.save(ignore_permissions=True)
+            self.flags.ignore_validate = False

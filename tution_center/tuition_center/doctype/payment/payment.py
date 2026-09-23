@@ -18,10 +18,40 @@ class Payment(Document):
             enrolment = frappe.get_doc("Fee Enrolment", self.fee_enrolment)
             self.student = enrolment.student
             outstanding = flt(enrolment.fee_amount) - flt(enrolment.paid_amount)
-            if flt(self.amount) > outstanding and outstanding > 0:
-                frappe.msgprint(
-                    _("Note: amount exceeds outstanding {0}").format(outstanding)
+            if flt(self.amount) > outstanding:
+                frappe.throw(
+                    _(
+                        "Payment amount {0} exceeds the outstanding balance {1} for {2}. "
+                        "Please record the exact amount due."
+                    ).format(
+                        frappe.bold(self.amount),
+                        frappe.bold(outstanding),
+                        frappe.bold(self.fee_enrolment),
+                    )
                 )
+
+        self.validate_duplicate_reference()
+
+    def validate_duplicate_reference(self):
+        """Prevent the same payment reference being recorded twice."""
+        if not self.reference_no:
+            return
+        filters = {
+            "reference_no": self.reference_no,
+            "docstatus": ("<", 2),
+        }
+        if self.fee_enrolment:
+            filters["fee_enrolment"] = self.fee_enrolment
+        if self.name:
+            filters["name"] = ("!=", self.name)
+        duplicate = frappe.db.get_value("Payment", filters, "name")
+        if duplicate:
+            frappe.throw(
+                _("Payment reference {0} is already used in payment {1}").format(
+                    frappe.bold(self.reference_no), frappe.bold(duplicate)
+                ),
+                frappe.DuplicateEntryError,
+            )
 
     def before_insert(self):
         if not self.received_by:

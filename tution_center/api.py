@@ -2,7 +2,9 @@ import frappe
 from frappe import _
 from frappe.utils import (
     add_days,
+    cint,
     flt,
+    getdate,
     now_datetime,
     today,
 )
@@ -25,6 +27,19 @@ def get_batch_students(batch):
     """Students enrolled in a batch — used by Attendance Tool."""
     if not frappe.has_permission("Student", "read"):
         frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+    # teachers may only view rosters of batches they teach
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    if "System Manager" not in roles and "Tuition Manager" not in roles:
+        teacher = frappe.db.get_value("Teacher", {"user": user}, "name")
+        batch_teacher = frappe.db.get_value("Batch", batch, "teacher")
+        if not teacher or batch_teacher != teacher:
+            frappe.throw(
+                _("You are not permitted to view roster for batch {0}").format(batch),
+                frappe.PermissionError,
+            )
+
     return frappe.get_all(
         "Batch Student",
         filters={"parent": batch, "parenttype": "Batch"},
@@ -46,9 +61,15 @@ def mark_attendance(students, date, batch, status_map):
     if isinstance(status_map, str):
         status_map = json.loads(status_map)
 
+    if not students:
+        frappe.throw(_("No students supplied"))
+
     if not frappe.has_permission("Student Attendance", "create"):
         frappe.throw(_("Not permitted"), frappe.PermissionError)
 
+    _validate_attendance_request(batch, date, students)
+
+    updated = 0
     created = 0
     for student in students:
         status = "Present"
@@ -57,25 +78,82 @@ def mark_attendance(students, date, batch, status_map):
         elif student in status_map.get("Leave", []):
             status = "Leave"
 
-        existing = frappe.db.exists(
-            "Student Attendance",
-            {"student": student, "date": date, "batch": batch, "docstatus": 1},
-        )
-        if existing:
-            frappe.db.set_value("Student Attendance", existing, "status", status)
-        else:
-            frappe.get_doc(
-                {
-                    "doctype": "Student Attendance",
-                    "student": student,
-                    "date": date,
-                    "batch": batch,
-                    "status": status,
-                }
-            ).insert(ignore_permissions=True)
+        _, was_created = _upsert_attendance(student, date, batch, status)
+        if was_created:
             created += 1
+        else:
+            updated += 1
 
-    return {"created": created, "date": date, "batch": batch}
+    return {"created": created, "updated": updated, "date": date, "batch": batch}
+
+
+def _validate_attendance_request(batch, date, students):
+    """Validate batch, roster membership and date for attendance marking.
+
+    - Batch must exist.
+    - Teachers may only mark attendance for batches they teach;
+      Tuition Manager / System Manager may mark for any batch.
+    - Every requested student must be an active member of the batch.
+    """
+    if not batch or not frappe.db.exists("Batch", batch):
+        frappe.throw(_("Batch {0} not found").format(batch), frappe.DoesNotExistError)
+
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    if "System Manager" not in roles and "Tuition Manager" not in roles:
+        teacher = frappe.db.get_value("Teacher", {"user": user}, "name")
+        batch_teacher = frappe.db.get_value("Batch", batch, "teacher")
+        if not teacher or batch_teacher != teacher:
+            frappe.throw(
+                _("You are not permitted to mark attendance for batch {0}").format(batch),
+                frappe.PermissionError,
+            )
+
+    roster = set(
+        frappe.get_all(
+            "Batch Student",
+            filters={"parent": batch, "parenttype": "Batch", "active": 1},
+            pluck="student",
+        )
+    )
+    invalid = [s for s in students if s not in roster]
+    if invalid:
+        frappe.throw(
+            _("Not on the active roster of batch {0}: {1}").format(
+                batch, frappe.bold(", ".join(invalid))
+            ),
+            frappe.PermissionError,
+        )
+
+    if getdate(date) > getdate(today()):
+        frappe.throw(_("Attendance cannot be marked for a future date"))
+
+
+def _upsert_attendance(student, date, batch, status):
+    """Create or update one attendance record; return (name, created_bool)."""
+    existing = frappe.db.exists(
+        "Student Attendance",
+        {"student": student, "date": date, "batch": batch},
+    )
+    if existing:
+        frappe.db.set_value(
+            "Student Attendance",
+            existing,
+            {"status": status},
+        )
+        return existing, False
+
+    doc = frappe.get_doc(
+        {
+            "doctype": "Student Attendance",
+            "student": student,
+            "date": date,
+            "batch": batch,
+            "status": status,
+        }
+    )
+    doc.insert(ignore_permissions=True)
+    return doc.name, True
 
 
 # ------------------------------------------------------------------
@@ -125,21 +203,41 @@ def send_reminder_email(student, enrolment, outstanding):
 
 
 def send_fee_reminders():
-    """Daily scheduled job — remind all unpaid/partially paid fee enrolments."""
+    """Daily scheduled job — remind unpaid/partially paid enrolments approaching or past due."""
     settings = frappe.get_cached_doc("Tuition Settings")
     if not settings.enable_fee_reminders:
         return
 
+    lead_days = cint(settings.fee_reminder_days)
+    today_date = getdate(today())
+    horizon = add_days(today_date, lead_days)
+
     enrolments = frappe.get_all(
         "Fee Enrolment",
-        filters={"status": ("in", ["Unpaid", "Partially Paid"])},
-        fields=["name", "student", "fee_amount", "paid_amount", "course", "academic_term"],
+        filters={
+            "status": ("in", ["Unpaid", "Partially Paid"]),
+            "due_date": ("<=", horizon),
+        },
+        fields=["name", "student", "fee_amount", "paid_amount", "course", "academic_term", "due_date"],
     )
 
     sent = 0
     for e in enrolments:
         outstanding = flt(e.fee_amount) - flt(e.paid_amount)
-        if outstanding <= 0:
+        if outstanding <= 0 or not e.due_date:
+            continue
+        # throttle: skip if a reminder was already emailed recently
+        recently_sent = frappe.db.exists(
+            "Communication",
+            {
+                "reference_doctype": "Fee Enrolment",
+                "reference_name": e.name,
+                "communication_type": "Email",
+                "sent_or_received": "Sent",
+                "creation": (">", add_days(today_date, -7)),
+            },
+        )
+        if recently_sent:
             continue
         student = frappe.get_cached_value(
             "Student", e.student, ["student_name", "student_email_id"], as_dict=True

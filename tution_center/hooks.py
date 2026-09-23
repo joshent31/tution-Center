@@ -49,8 +49,35 @@ after_install = "tution_center.install.after_install"
 before_uninstall = "tution_center.install.before_uninstall"
 
 # ---------------- Permissions ----------------
-# permission_query_conditions / has_permission per doctype are handled
-# inside each doctype's python controller when needed.
+# Record-level scoping via permission_query_conditions (list/report queries)
+# and has_permission (document-level checks). See tution_center/permissions.py
+permission_query_conditions = {
+    doctype: "tution_center.permissions.get_permission_query_conditions"
+    for doctype in (
+        "Student",
+        "Guardian",
+        "Batch",
+        "Fee Enrolment",
+        "Payment",
+        "Student Attendance",
+        "Exam",
+        "Exam Result",
+    )
+}
+
+has_permission = {
+    doctype: "tution_center.permissions.has_permission"
+    for doctype in (
+        "Student",
+        "Guardian",
+        "Batch",
+        "Fee Enrolment",
+        "Payment",
+        "Student Attendance",
+        "Exam",
+        "Exam Result",
+    )
+}
 
 # ---------------- Calendars / views ----------------
 # calendar_views = [{"doctype": "Exam"}]
